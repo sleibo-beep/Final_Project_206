@@ -17,7 +17,7 @@ def json_try():
         contents = file.read() # get it into a string
         dict_list = json.loads(contents) # loads the data into a dictionary
         file.close() # close the file, we have the data
-        data = json.loads(string)
+        data = json.loads()
     except:
         print("error reading from file")
 
