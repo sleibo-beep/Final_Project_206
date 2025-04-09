@@ -5,9 +5,9 @@ import os
 import requests
 import sqlite3
 
-response = requests.get('# insert url of api')
-data = response.text
-in_dict = json.loads(data) # this line might do the same thing as dict_list
+API_KEY = "67ebff1af65898f678660136"
+BASE_URL = "https://api.makcorps.com/expedia"
+DB_NAME = "final_project.db"
 
 def json_try():
     try:
@@ -33,5 +33,3 @@ def create_database():
     ''')
     conn.commit()
     conn.close()
-
-# def insert_data(data):
