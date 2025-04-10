@@ -4,8 +4,8 @@ import requests
 import sqlite3
 
 # --- CONFIG ---
-API_KEY = "67ebff1af65898f678660136"
-BASE_URL = "https://api.makcorps.com/expedia"
+API_KEY = "3a6fe0a979d0cce6c60ca539"
+BASE_URL = "https://v6.exchangerate-api.com/v6/3a6fe0a979d0cce6c60ca539/latest/USD"
 DB_NAME = "hotel_data.db"
 
 # --- STEP 1: Fetch data from API ---
