@@ -1,8 +1,8 @@
 import requests
 import sqlite3
 
-api_key = "d3e23e370dffc1de116d4a28d2e71c41"
-api_url = "http://api.weatherstack.com/historical"
+api_key = "3a6fe0a979d0cce6c60ca539"
+api_url = "https://v6.exchangerate-api.com/v6/3a6fe0a979d0cce6c60ca539/latest/USD"
 db_name = "final_project.db"
 dates = [
     ("2025-12-01", "2025-12-02"),
