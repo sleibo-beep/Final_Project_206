@@ -37,7 +37,7 @@ def get_weather(zip):
 
 # --- DATABASE SETUP ---
 def create_db():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect("final_project.db")
     cur = conn.cursor()
     cur.execute('''
         CREATE TABLE IF NOT EXISTS WeatherData (
@@ -53,6 +53,7 @@ def create_db():
     ''')
     conn.commit()
     conn.close()
+# create a new function that cleans up the data 
 
 # --- FETCH AND STORE ---
 def fetch_weather(city_id, city_name):
@@ -85,6 +86,7 @@ def insert_weather_data(records):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
     for record in records:
+        print("here", record)
         cur.execute('''
             INSERT OR IGNORE INTO WeatherData (city_id, city_name, date, rainfall, snowfall, wind_gust)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -99,12 +101,14 @@ def main():
     # print(json.dumps(test1, indent = 2))
 
     create_db()
+
     for city in CITIES:
         print(city)
         data = get_weather(city["zip"])
-        print(json.dumps(data, indent = 2))
-        # records = fetch_weather(city["id"], city["name"])
-        # insert_weather_data(records)
+        records = get_weather(city['zip'])
+        insert_weather_data(records)
+    print(json.dumps(data, indent = 2))
+
         # print(f"Inserted {len(records)} weather entries for {city['name']}")
 
 if __name__ == "__main__":
