@@ -1,66 +1,72 @@
+
 # hey rachel!
+
+# hotel_data.py
+# Fetches hotel data and stores it in a separate SQLite DB
 
 import requests
 import sqlite3
+from datetime import datetime, timedelta
+import json
 
-# --- CONFIG ---
-API_KEY = "3a6fe0a979d0cce6c60ca539"
-BASE_URL = "https://v6.exchangerate-api.com/v6/3a6fe0a979d0cce6c60ca539/latest/USD"
-DB_NAME = "hotel_data.db"
+HOTEL_API_KEY = "67ebff1af65898f678660136"
+DB_NAME = "hotel.db"
 
-# --- STEP 1: Fetch data from API ---
-def get_hotel_price(checkin, checkout):
-    url = f"{BASE_URL}?hotelid=1450057&currency=USD&rooms=1&adults=2&checkin={checkin}&checkout={checkout}&api_key={API_KEY}"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()
-        try:
-            price = float(data["expedia"][0]["price"])
-            return price
-        except Exception as e:
-            print("Error extracting price:", e)
-    else:
-        print("API call failed with status code", response.status_code)
-    
-    return None
+conn = sqlite3.connect(DB_NAME)
+cursor = conn.cursor()
 
-# --- STEP 2: Set up SQLite database ---
-def create_table():
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS HotelPrices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            checkin TEXT,
-            checkout TEXT,
-            price REAL
-        )
-    ''')
-    conn.commit()
-    conn.close()
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS HotelPrices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hotel_id TEXT,
+        location TEXT,
+        checkin TEXT,
+        checkout TEXT,
+        price REAL,
+        UNIQUE(hotel_id, checkin, checkout)
+    )
+''')
+conn.commit()
 
-# --- STEP 3: Insert into database ---
-def insert_price(checkin, checkout, price):
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-    cur.execute('''
-        INSERT INTO HotelPrices (checkin, checkout, price)
-        VALUES (?, ?, ?)
-    ''', (checkin, checkout, price))
-    conn.commit()
-    conn.close()
-    print(f"✅ Inserted: {checkin} to {checkout} for ${price}")
 
-# --- MAIN WORKFLOW ---
-def main():
-    create_table()
-    checkin = "2025-12-10"
-    checkout = "2025-12-11"
-    
-    price = get_hotel_price(checkin, checkout)
-    if price:
-        insert_price(checkin, checkout, price)
+def fetch_hotel_price(hotel_id: str, checkin: str, checkout: str):
+    url = f"https://api.makcorps.com/expedia?hotelid={hotel_id}&currency=USD&rooms=1&adults=2&checkin={checkin}&checkout={checkout}&api_key={HOTEL_API_KEY}"
+    try:
+        resp = requests.get(url)
+        data = resp.json()
+
+        if "data" not in data or not data["data"]:
+            print(f"[NO DATA] hotel_id={hotel_id}, checkin={checkin}, checkout={checkout}")
+            print(json.dumps(data, indent=2))
+            return None
+
+        price = float(data['data'][0]['price'])
+        return price
+    except Exception as e:
+        print(f"[ERROR] hotel_id={hotel_id}, checkin={checkin}: {e}")
+        return None
+
+
+def insert_hotel_data(hotel_id: str, location: str, start_date: str, days: int):
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    count = 0
+    for i in range(days):
+        if count >= 25:
+            break
+        checkin = (start + timedelta(days=i)).strftime("%Y-%m-%d")
+        checkout = (start + timedelta(days=i + 1)).strftime("%Y-%m-%d")
+        if cursor.execute("SELECT 1 FROM HotelPrices WHERE hotel_id=? AND checkin=? AND checkout=?", (hotel_id, checkin, checkout)).fetchone():
+            continue
+        price = fetch_hotel_price(hotel_id, checkin, checkout)
+        if price:
+            cursor.execute("""
+                INSERT OR IGNORE INTO HotelPrices (hotel_id, location, checkin, checkout, price)
+                VALUES (?, ?, ?, ?, ?)
+            """, (hotel_id, location, checkin, checkout, price))
+            conn.commit()
+            count += 1
+
 
 if __name__ == "__main__":
-    main()
+    insert_hotel_data("1450057", "Ann Arbor", "2024-12-01", 40)
+    conn.close()
