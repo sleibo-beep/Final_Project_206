@@ -45,9 +45,9 @@ def create_db():
             city_id INTEGER,
             city_name TEXT,
             date TEXT,
-            rainfall REAL,
-            snowfall REAL,
-            wind_gust REAL,
+            temp FLOAT,
+            pressure INTEGER,
+            humidity INTEGER,
             UNIQUE(city_id, date)
         )
     ''')
