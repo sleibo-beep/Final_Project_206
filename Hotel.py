@@ -1,69 +1,19 @@
 import requests
 import sqlite3
-from datetime import datetime, timedelta
-import json
 
-WEATHER_API_KEY = "d3e23e370dffc1de116d4a28d2e71c41"
-DB_NAME = "weather.db"
+url = "https://www.airnowapi.org/aq/forecast/zipCode/?format=application/json&zipCode=73008&date=2025-04-15&distance=1000&API_KEY=199F9B5F-EC89-4A51-BB86-F2303C738B15"
+api_key = "199F9B5F-EC89-4A51-BB86-F2303C738B15"
+db_name = "final_project.db"
 
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
+ZIP_CODES = [
+    "10001", "94103", "60601", "77001", "85001", "19104", "30303", "98101", "48201", "02201",
+    "33101", "80202", "55401", "64106", "46204", "73102", "96813", "20001", "37201", "21201",
+    "14201", "27601", "29201", "32801", "37203", "53202", "53211", "10019", "10023", "10003",
+    "30309", "60611", "70112", "75201", "28202", "85301", "48226", "10036", "10024", "94114",
+    "95814", "97209", "63103", "64108", "73103", "85004", "55403", "19103", "19106", "20005"
+]
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS Weather (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        location TEXT,
-        date TEXT,
-        rainfall REAL,
-        snowfall REAL,
-        wind_gust REAL,
-        UNIQUE(location, date)
-    )
-''')
-conn.commit()
-
-
-def fetch_weather(location: str, date: str):
-    url = f"http://api.weatherstack.com/historical?access_key={WEATHER_API_KEY}&query={location}&historical_date={date}&hourly=1"
-    try:
-        resp = requests.get(url)
-        data = resp.json()
-
-        if "historical" not in data or date not in data["historical"]:
-            print(f"[NO DATA] location={location}, date={date}")
-            print(json.dumps(data, indent=2))
-            return None
-
-        weather = data['historical'][date]['hourly'][0]
-        rainfall = float(weather.get('precip', 0))
-        snowfall = float(weather.get('snowfall', 0))
-        wind_gust = float(weather.get('wind_gust', 0))
-        return rainfall, snowfall, wind_gust
-    except Exception as e:
-        print(f"[ERROR] location={location}, date={date}: {e}")
-        return None
-
-
-def insert_weather_data(location: str, start_date: str, days: int):
-    start = datetime.strptime(start_date, "%Y-%m-%d")
-    count = 0
-    for i in range(days):
-        if count >= 25:
-            break
-        date = (start + timedelta(days=i)).strftime("%Y-%m-%d")
-        if cursor.execute("SELECT 1 FROM Weather WHERE location=? AND date=?", (location, date)).fetchone():
-            continue
-        result = fetch_weather(location, date)
-        if result:
-            rainfall, snowfall, wind_gust = result
-            cursor.execute("""
-                INSERT OR IGNORE INTO Weather (location, date, rainfall, snowfall, wind_gust)
-                VALUES (?, ?, ?, ?, ?)
-            """, (location, date, rainfall, snowfall, wind_gust))
-            conn.commit()
-            count += 1
-
-
-if __name__ == "__main__":
-    insert_weather_data("Ann Arbor", "2024-12-01", 40)
-    conn.close()
+def create_db():
+    conn = sqlite3.connect(db_name)
+    cur = conn.cursor()
+    cur.execute()
