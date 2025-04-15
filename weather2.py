@@ -45,7 +45,7 @@ def fetch_and_clean(zip_code):
     }
     response = requests.get(BASE_URL, params=params)
     if response.status_code != 200:
-        print(f"❌ Failed to fetch data for {zip_code} – Status: {response.status_code}")
+        print(f" Failed to fetch data for {zip_code} – Status: {response.status_code}")
         return []
 
     data = response.json()
@@ -80,12 +80,12 @@ def main():
     chunks = [all_zips[i:i + chunk_size] for i in range(0, len(all_zips), chunk_size)]
 
     for i, zip_chunk in enumerate(chunks):
-        print(f"\n📦 API Run {i + 1}/{len(chunks)} — Fetching data for {len(zip_chunk)} zip codes")
+        print(f"\n API Run {i + 1}/{len(chunks)} — Fetching data for {len(zip_chunk)} zip codes")
         for zip_code in zip_chunk:
             records = fetch_and_clean(zip_code)
             if records:
                 insert_weather_data(records)
-        print("⏳ Waiting 5 seconds before next run...")
+        print("Waiting 5 seconds before next run...")
         time.sleep(5)
 
     # Optional: Check total rows
@@ -93,7 +93,7 @@ def main():
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM WeatherData")
     total_rows = cur.fetchone()[0]
-    print(f"\n✅ All done! Total rows in WeatherData table: {total_rows}")
+    print(f"\n All done! Total rows in WeatherData table: {total_rows}")
     conn.close()
 
 if __name__ == "__main__":

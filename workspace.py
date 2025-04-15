@@ -26,19 +26,19 @@ def create_db():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS WeatherData (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            city_name TEXT,
+            zip TEXT,
             date TEXT,
             temp FLOAT,
             pressure INTEGER,
             humidity INTEGER,
-            UNIQUE(city_name, date)
+            UNIQUE(zip, date)
         )
     ''')
     conn.commit()
     conn.close()
 
 # --- FETCH WEATHER FOR A SINGLE ZIP ---
-def fetch_and_clean(zip_code, city_name=None):
+def fetch_and_clean(zip_code, city_id=None, city_name=None):
     params = {
         "appid": API_KEY,
         "zip": zip_code,
@@ -56,9 +56,9 @@ def fetch_and_clean(zip_code, city_name=None):
     humidity = data.get("main", {}).get("humidity", 0)
     date = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
-    city_name = f"ZIP_{zip_code}"
+    city_name = city_name or f"ZIP_{zip_code}"
 
-    return [(city_name, date, temp, pressure, humidity)]
+    return [(city_id, city_name, date, temp, pressure, humidity)]
 
 # --- INSERT WEATHER INTO DB ---
 def insert_weather_data(records):
@@ -66,7 +66,7 @@ def insert_weather_data(records):
     cur = conn.cursor()
     for record in records:
         cur.execute('''
-            INSERT OR IGNORE INTO WeatherData (city_name, date, temp, pressure, humidity)
+            INSERT OR IGNORE INTO WeatherData (city_id, city_name, date, temp, pressure, humidity)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', record)
     conn.commit()
