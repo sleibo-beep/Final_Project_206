@@ -31,7 +31,7 @@ def create_db():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS WeatherData (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            zip TEXT,
+            zip INTEGER,
             date TEXT,
             temp FLOAT,
             pressure INTEGER,
