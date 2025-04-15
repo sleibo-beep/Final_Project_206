@@ -16,4 +16,14 @@ ZIP_CODES = [
 def create_db():
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
-    cur.execute()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS WeatherData (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            city_name TEXT,
+            date TEXT,
+            temp FLOAT,
+            pressure INTEGER,
+            humidity INTEGER,
+            UNIQUE(city_name, date)
+        )
+    ''')
