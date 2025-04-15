@@ -26,7 +26,6 @@ def create_db():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS WeatherData (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            city_id INTEGER,
             city_name TEXT,
             date TEXT,
             temp FLOAT,
@@ -39,7 +38,7 @@ def create_db():
     conn.close()
 
 # --- FETCH WEATHER FOR A SINGLE ZIP ---
-def fetch_and_clean(zip_code, city_id=None, city_name=None):
+def fetch_and_clean(zip_code, city_name=None):
     params = {
         "appid": API_KEY,
         "zip": zip_code,
@@ -47,7 +46,7 @@ def fetch_and_clean(zip_code, city_id=None, city_name=None):
     }
     response = requests.get(BASE_URL, params=params)
     if response.status_code != 200:
-        print(f"❌ Failed to fetch data for {zip_code} – Status: {response.status_code}")
+        print(f"Failed to fetch data for {zip_code} – Status: {response.status_code}")
         return []
 
     data = response.json()
@@ -57,10 +56,9 @@ def fetch_and_clean(zip_code, city_id=None, city_name=None):
     humidity = data.get("main", {}).get("humidity", 0)
     date = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
-    city_name = city_name or f"ZIP_{zip_code}"
-    city_id = city_id or 0
+    city_name = f"ZIP_{zip_code}"
 
-    return [(city_id, city_name, date, temp, pressure, humidity)]
+    return [(city_name, date, temp, pressure, humidity)]
 
 # --- INSERT WEATHER INTO DB ---
 def insert_weather_data(records):
@@ -68,7 +66,7 @@ def insert_weather_data(records):
     cur = conn.cursor()
     for record in records:
         cur.execute('''
-            INSERT OR IGNORE INTO WeatherData (city_id, city_name, date, temp, pressure, humidity)
+            INSERT OR IGNORE INTO WeatherData (city_name, date, temp, pressure, humidity)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', record)
     conn.commit()
@@ -85,20 +83,19 @@ def main():
     chunks = [all_zips[i:i + chunk_size] for i in range(0, len(all_zips), chunk_size)]
 
     for i, zip_chunk in enumerate(chunks):
-        print(f"\n🔁 API Run {i + 1}/{len(chunks)} — Fetching data for {len(zip_chunk)} zip codes")
+        print(f"\n API Run {i + 1}/{len(chunks)} — Fetching data for {len(zip_chunk)} zip codes")
         for zip_code in zip_chunk:
             records = fetch_and_clean(zip_code)
             if records:
                 insert_weather_data(records)
-        print("⏳ Waiting 5 seconds before next run...")
-        time.sleep(5)
+      
 
     # Optional: Check total rows
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM WeatherData")
     total_rows = cur.fetchone()[0]
-    print(f"\n✅ All done! Total rows in WeatherData table: {total_rows}")
+    print(f"\n All done! Total rows in WeatherData table: {total_rows}")
     conn.close()
 
 if __name__ == "__main__":

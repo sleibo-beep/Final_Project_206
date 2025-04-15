@@ -1,72 +1,77 @@
-
-# hey rachel!
-
-# hotel_data.py
-# Fetches hotel data and stores it in a separate SQLite DB
-
 import requests
 import sqlite3
-from datetime import datetime, timedelta
-import json
 
-HOTEL_API_KEY = "67ebff1af65898f678660136"
-DB_NAME = "hotel.db"
+# --- CONFIG ---
+DB_NAME = "final_project.db"
+ZIP_API_KEY = "b83257a0-1624-11f0-8d23-dfd3fb3c5a70"
+ZIP_API_BASE = "https://app.zipcodebase.com/api/v1/search"
 
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
+# --- ZIP LIST (modify or expand this) ---
+ZIP_LIST = [
+    "10001", "10002", "10003", "10004", "10005",
+    "90210", "30301", "60601", "94103", "33101",
+    "15213", "02108", "20001", "19104", "98101",
+    "77001", "37201", "85001", "46204", "55401",
+    "64106", "27601", "63103", "32801", "96813"
+]  # 25 zip codes for one API run
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS HotelPrices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hotel_id TEXT,
-        location TEXT,
-        checkin TEXT,
-        checkout TEXT,
-        price REAL,
-        UNIQUE(hotel_id, checkin, checkout)
-    )
-''')
-conn.commit()
+# --- 1. Create the ZipCodes table ---
+def create_zipcode_table():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS ZipCodes (
+            zip TEXT PRIMARY KEY,
+            city TEXT,
+            state TEXT,
+            country TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
+# --- 2. Fetch ZIP code metadata from ZipCodeBase ---
+def fetch_zipcode_data(zip_codes):
+    headers = {"apikey": ZIP_API_KEY}
+    codes_str = codes_str = ",".join(zip_codes)
+    params = {"codes": codes_str}
 
-def fetch_hotel_price(hotel_id: str, checkin: str, checkout: str):
-    url = f"https://api.makcorps.com/expedia?hotelid={hotel_id}&currency=USD&rooms=1&adults=2&checkin={checkin}&checkout={checkout}&api_key={HOTEL_API_KEY}"
-    try:
-        resp = requests.get(url)
-        data = resp.json()
+    response = requests.get(ZIP_API_BASE, headers=headers, params=params)
+    if response.status_code != 200:
+        print(f"❌ ZIP API failed: {response.status_code}")
+        return []
 
-        if "data" not in data or not data["data"]:
-            print(f"[NO DATA] hotel_id={hotel_id}, checkin={checkin}, checkout={checkout}")
-            print(json.dumps(data, indent=2))
-            return None
+    data = response.json().get("results", {})
+    records = []
 
-        price = float(data['data'][0]['price'])
-        return price
-    except Exception as e:
-        print(f"[ERROR] hotel_id={hotel_id}, checkin={checkin}: {e}")
-        return None
+    for zip_code, results in data.items():
+        if results:
+            item = results[0]
+            city = item.get("city", "Unknown")
+            state = item.get("state", "Unknown")
+            country = item.get("country_code", "Unknown")
+            records.append((zip_code, city, state, country))
 
+    return records
 
-def insert_hotel_data(hotel_id: str, location: str, start_date: str, days: int):
-    start = datetime.strptime(start_date, "%Y-%m-%d")
-    count = 0
-    for i in range(days):
-        if count >= 25:
-            break
-        checkin = (start + timedelta(days=i)).strftime("%Y-%m-%d")
-        checkout = (start + timedelta(days=i + 1)).strftime("%Y-%m-%d")
-        if cursor.execute("SELECT 1 FROM HotelPrices WHERE hotel_id=? AND checkin=? AND checkout=?", (hotel_id, checkin, checkout)).fetchone():
-            continue
-        price = fetch_hotel_price(hotel_id, checkin, checkout)
-        if price:
-            cursor.execute("""
-                INSERT OR IGNORE INTO HotelPrices (hotel_id, location, checkin, checkout, price)
-                VALUES (?, ?, ?, ?, ?)
-            """, (hotel_id, location, checkin, checkout, price))
-            conn.commit()
-            count += 1
+# --- 3. Insert ZIP records into the database ---
+def insert_zipcode_data(records):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    for record in records:
+        cur.execute('''
+            INSERT OR IGNORE INTO ZipCodes (zip, city, state, country)
+            VALUES (?, ?, ?, ?)
+        ''', record)
+    conn.commit()
+    conn.close()
 
+# --- 4. Run everything ---
+def main():
+    create_zipcode_table()
+    records = fetch_zipcode_data(ZIP_LIST)
+    insert_zipcode_data(records)
+    print(f"✅ Inserted {len(records)} zip codes into the database.")
 
 if __name__ == "__main__":
-    insert_hotel_data("1450057", "Ann Arbor", "2024-12-01", 40)
-    conn.close()
+    main()
