@@ -73,11 +73,11 @@ def fetch_weather(city_id, city_name):
 
     records = []
     for entry in weather_list:
-        dt = datetime.utcfromtimestamp(entry["dt"]).strftime('%Y-%m-%d')
+        date = datetime.utcfromtimestamp(entry["dt"]).strftime('%Y-%m-%d')
         temp = entry.get("temp", {}).get("1h", 0)
         pressure = entry.get("pressure", {}).get("1h", 0)
         humidity = entry.get("humidity", {}).get("1h", 0)
-        records.append((city_id, city_name, dt, temp, pressure, humidity))
+        records.append((city_id, city_name, date, temp, pressure, humidity))
 
     return records
 
@@ -88,7 +88,7 @@ def insert_weather_data(records):
     for record in records:
         print("here", record)
         cur.execute('''
-            INSERT OR IGNORE INTO WeatherData (city_id, city_name, date, rainfall, snowfall, wind_gust)
+            INSERT OR IGNORE INTO WeatherData (city_id, city_name, date, temp, pressure, humidity)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', record)
     conn.commit()
@@ -107,7 +107,10 @@ def main():
         data = get_weather(city["zip"])
         print(json.dumps(data, indent = 2))
         records = get_weather(city['zip'])
+            #call fetch weather data
         insert_weather_data(records)
+    
+
     
 
         # print(f"Inserted {len(records)} weather entries for {city['name']}")
