@@ -1,6 +1,7 @@
 import requests
 import sqlite3
 from datetime import datetime
+import random
 
 # --- CONFIGURATION ---
 API_KEY = "199F9B5F-EC89-4A51-BB86-F2303C738B15"
@@ -87,11 +88,35 @@ def insert_air_quality(records):
 # --- 4. Main driver function ---
 def main():
     create_airquality_table()
-    for zip_code in ZIP_CODES:
-        print(f" Fetching AQI for {zip_code}")
-        records = fetch_air_quality(zip_code)
-        insert_air_quality(records)
-    print("Air quality data inserted.")
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
 
+    # Get zip codes already in DB
+    cur.execute("SELECT DISTINCT zip FROM AirQualityData")
+    stored_zips = set(row[0] for row in cur.fetchall())
+
+    # Filter out zips that are already in DB
+    remaining_zips = [z for z in ZIP_CODES if z not in stored_zips]
+    random.shuffle(remaining_zips)
+
+    chunk = remaining_zips[:25]  # Take the next 25 new ones
+
+    if not chunk:
+        print("All zip codes have already been fetched.")
+        conn.close()
+        return
+
+    print(f"\nFetching AQI data for {len(chunk)} new zip codes...\n")
+    for zip_code in chunk:
+        records = fetch_air_quality(zip_code)
+        if records:
+            insert_air_quality(records)
+
+    # Optional: Print updated total
+    cur.execute("SELECT COUNT(*) FROM AirQualityData")
+    total_rows = cur.fetchone()[0]
+    print(f"\nTotal rows in AQI: {total_rows}")
+
+    conn.close()
 if __name__ == "__main__":
     main()
