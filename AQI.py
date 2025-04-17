@@ -4,7 +4,7 @@ from datetime import datetime
 import random
 
 # --- CONFIGURATION ---
-API_KEY = "199F9B5F-EC89-4A51-BB86-F2303C738B15"
+API_KEY = "BF559927-DC09-44A6-B56C-2D51E5751C9D"
 BASE_URL = "https://www.airnowapi.org/aq/forecast/zipCode/"
 DB_NAME = "final_project.db"
 DATE = "2025-04-15"  # You can also use datetime.now().strftime('%Y-%m-%d')
@@ -56,7 +56,6 @@ def fetch_air_quality(zip_code):
 
     try:
         results = response.json()
-        # print(results)
     except:
         print(f"Failed to parse JSON for {zip_code}")
         return []
@@ -68,13 +67,11 @@ def fetch_air_quality(zip_code):
         aqi = item.get("AQI")
         category = item.get("Category", {}).get("Name")
         date = item.get("DateForecast")
-        # print(item)
+        #print(item)
 
         if pollutant and aqi is not None:
             records.append((zip_code, date, pollutant, aqi, category))
-
-        else:
-            print(f"failed for {zip_code}" )
+        
 
     return records
 
