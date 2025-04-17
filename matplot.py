@@ -1,11 +1,34 @@
-import matplotlib
+import sqlite3
 import matplotlib.pyplot as plt
 
-x = [1, 2, 3, 4]
-y = [2, 4, 6, 8]
+conn = sqlite3.connect('final_project.db')
+cursor = conn.cursor()
 
-plt.plot(x, y)
-plt.title("Line Plot")
-plt.xlabel("X-Axis")
-plt.ylabel("Y-Axis")
+cursor.execute("SELECT AVG(temp) FROM WeatherData")
+average_temp = cursor.fetchone()[0]
+
+print("Average Temp:", average_temp)
+
+cursor.execute("SELECT AVG(pressure) FROM WeatherData")
+average_pressure = cursor.fetchone()[0]
+
+print("Average Pressure:", average_pressure)
+
+cursor.execute("SELECT AVG(humidity) FROM WeatherData")
+average_humidity = cursor.fetchone()[0]
+
+print("Average Humidity:", average_humidity)
+
+conn.close()
+
+# Initialize the plot
+fig = plt.figure(figsize=(10,5))
+ax1 = fig.add_subplot(221)
+ax1.set_xlabel("Variable")
+ax1.set_ylabel("Average Per Zipcode")
+
+# Plot the data
+ax1.bar(["Temp","Pressure","Humidity"],[average_temp,average_pressure,average_humidity])
+
+# Show the plot
 plt.show()
