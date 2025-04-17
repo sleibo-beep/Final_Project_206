@@ -32,7 +32,6 @@ def create_airquality_table():
             date TEXT,
             pollutant TEXT,
             aqi INTEGER,
-            category TEXT,
             UNIQUE(zip, date, pollutant)
         )
     ''')
@@ -63,14 +62,12 @@ def fetch_air_quality(zip_code):
     records = []
     for item in results:
         pollutant = item.get("ParameterName")
-
         aqi = item.get("AQI")
-        category = item.get("Category", {}).get("Name")
         date = item.get("DateForecast")
         #print(item)
 
         if pollutant and aqi is not None:
-            records.append((zip_code, date, pollutant, aqi, category))
+            records.append((zip_code, date, pollutant, aqi))
         
 
     return records
@@ -81,8 +78,8 @@ def insert_air_quality(records):
     cur = conn.cursor()
     for record in records:
         cur.execute('''
-            INSERT OR IGNORE INTO AirQualityData (zip, date, pollutant, aqi, category)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO AirQualityData (zip, date, pollutant, aqi)
+            VALUES (?, ?, ?, ?)
         ''', record)
     conn.commit()
     conn.close()
