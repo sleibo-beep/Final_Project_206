@@ -28,8 +28,7 @@ def create_airquality_table():
     cur = conn.cursor()
     cur.execute('''
         CREATE TABLE IF NOT EXISTS AirQualityData (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            zip TEXT,
+            zip INTEGER PRIMARY KEY ,
             date TEXT,
             pollutant TEXT,
             aqi INTEGER,
@@ -57,6 +56,7 @@ def fetch_air_quality(zip_code):
 
     try:
         results = response.json()
+        # print(results)
     except:
         print(f"Failed to parse JSON for {zip_code}")
         return []
@@ -64,12 +64,17 @@ def fetch_air_quality(zip_code):
     records = []
     for item in results:
         pollutant = item.get("ParameterName")
+
         aqi = item.get("AQI")
         category = item.get("Category", {}).get("Name")
         date = item.get("DateForecast")
+        # print(item)
 
         if pollutant and aqi is not None:
             records.append((zip_code, date, pollutant, aqi, category))
+
+        else:
+            print(f"failed for {zip_code}" )
 
     return records
 
@@ -106,7 +111,7 @@ def main():
         conn.close()
         return
 
-    print(f"\nFetching AQI data for {len(chunk)} new zip codes...\n")
+    print(f"\n\n\nFetching AQI data for {len(chunk)} new zip codes...\n")
     for zip_code in chunk:
         records = fetch_air_quality(zip_code)
         if records:
