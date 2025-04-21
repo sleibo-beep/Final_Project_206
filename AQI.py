@@ -7,7 +7,6 @@ import random
 API_KEY = "BF559927-DC09-44A6-B56C-2D51E5751C9D"
 BASE_URL = "https://www.airnowapi.org/aq/forecast/zipCode/"
 DB_NAME = "final_project.db"
-DATE = "2025-04-15"  # You can also use datetime.now().strftime('%Y-%m-%d')
 
 ZIP_CODES = [
      "10001", "94103", "60601", "77001", "85001", "19104", "30303", "98101", "48201", "02201",
@@ -29,10 +28,9 @@ def create_airquality_table():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS AirQualityData (
             zip INTEGER PRIMARY KEY ,
-            date TEXT,
             pollutant TEXT,
             aqi INTEGER,
-            UNIQUE(zip, date, pollutant)
+            UNIQUE(zip, pollutant)
         )
     ''')
     conn.commit()
@@ -43,7 +41,6 @@ def fetch_air_quality(zip_code):
     params = {
         "format": "application/json",
         "zipCode": zip_code,
-        "date": DATE,
         "distance": 25,
         "API_KEY": API_KEY
     }
@@ -63,11 +60,10 @@ def fetch_air_quality(zip_code):
     for item in results:
         pollutant = item.get("ParameterName")
         aqi = item.get("AQI")
-        date = item.get("DateForecast")
         #print(item)
 
         if pollutant and aqi is not None:
-            records.append((zip_code, date, pollutant, aqi))
+            records.append((zip_code, pollutant, aqi))
         
 
     return records
@@ -78,8 +74,8 @@ def insert_air_quality(records):
     cur = conn.cursor()
     for record in records:
         cur.execute('''
-            INSERT OR IGNORE INTO AirQualityData (zip, date, pollutant, aqi)
-            VALUES (?, ?, ?, ?)
+            INSERT OR IGNORE INTO AirQualityData (zip, pollutant, aqi)
+            VALUES (?, ?, ?)
         ''', record)
     conn.commit()
     conn.close()

@@ -26,19 +26,15 @@ def run_join_query():
         query = '''
             SELECT 
                 WeatherData.zip,
-                substr(WeatherData.date, 1, 10) AS date,
                 WeatherData.temp,
                 WeatherData.pressure,
                 WeatherData.humidity,
                 AirQualityData.pollutant,
-                AirQualityData.aqi,
-                AirQualityData.category
+                AirQualityData.aqi
             FROM WeatherData
             JOIN AirQualityData
                 ON WeatherData.zip = AirQualityData.zip
-                AND substr(WeatherData.date, 1, 10) = AirQualityData.date
-            ORDER BY date DESC
-            LIMIT 10
+            LIMIT 25
         '''
         df = pd.read_sql_query(query, conn)
         if df.empty:

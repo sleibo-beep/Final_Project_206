@@ -24,8 +24,9 @@ conn.close()
 # Initialize the plot
 fig = plt.figure(figsize=(10,5))
 ax1 = fig.add_subplot(221)
-ax1.set_xlabel("Variable")
+ax1.set_xlabel("Weather Statistic")
 ax1.set_ylabel("Average Per Zipcode")
+ax1.set_title("Average Weather Statistics Per Zipcode")
 
 # Plot the data
 ax1.bar(["Temp","Pressure","Humidity"],[average_temp,average_pressure,average_humidity])
