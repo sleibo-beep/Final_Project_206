@@ -1,6 +1,5 @@
 import requests
 import sqlite3
-from datetime import datetime
 import random
 
 # --- CONFIGURATION ---
@@ -9,7 +8,7 @@ BASE_URL = "https://www.airnowapi.org/aq/forecast/zipCode/"
 DB_NAME = "final_project.db"
 
 ZIP_CODES = [
-     "10001", "94103", "60601", "77001", "85001", "19104", "30303", "98101", "48201", "02201",
+    "10001", "94103", "60601", "77001", "85001", "19104", "30303", "98101", "48201", "02201",
     "33101", "80202", "55401", "64106", "46204", "73102", "96813", "20001", "37201", "21201",
     "14201", "27601", "29201", "32801", "37203", "53202", "53211", "10019", "10023", "10003",
     "30309", "60611", "70112", "75201", "28202", "85301", "48226", "10036", "10024", "94114",
@@ -21,22 +20,36 @@ ZIP_CODES = [
     "78701", "78702", "78704", "78705", "78741", "33125", "33126", "33127", "33130", "33132",
     "97201", "97202", "97203", "97206", "97210", "97212", "97214", "97217", "97219", "97221"
 ]
-# --- 1. Create the table ---
-def create_airquality_table():
+
+
+# --- 1. Create tables ---
+def create_tables():
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
+
+    # Create Pollutants table
     cur.execute('''
-        CREATE TABLE IF NOT EXISTS AirQualityData (
-            zip INTEGER PRIMARY KEY,
-            aqi INTEGER,
-            pollutants INTEGER,
-            UNIQUE(zip, pollutant_id)
+        CREATE TABLE IF NOT EXISTS Pollutants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE
         )
     ''')
+
+    # Create AirQualityData table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS AirQualityData (
+            zip INTEGER,
+            aqi INTEGER,
+            pollutant_id INTEGER,
+            PRIMARY KEY (zip, pollutant_id),
+            FOREIGN KEY (pollutant_id) REFERENCES Pollutants(id)
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
-# --- 2. Fetch data from AirNow API ---
+# --- 2. Fetch from API ---
 def fetch_air_quality(zip_code):
     params = {
         "format": "application/json",
@@ -60,21 +73,19 @@ def fetch_air_quality(zip_code):
     for item in results:
         pollutant = item.get("ParameterName")
         aqi = item.get("AQI")
-        #print(item)
 
         if pollutant and aqi is not None:
             records.append((zip_code, aqi, pollutant))
-        
 
     return records
 
-# --- 3. Insert into database ---
+# --- 3. Insert records with pollutant ID ---
 def insert_air_quality(records):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     for zip_code, aqi, pollutant in records:
-        # Insert into Pollutants table and get id
+        # Insert pollutant into Pollutants table and get ID
         cur.execute('''
             INSERT OR IGNORE INTO Pollutants (name)
             VALUES (?)
@@ -91,21 +102,25 @@ def insert_air_quality(records):
     conn.commit()
     conn.close()
 
-# --- 4. Main driver function ---
+# --- 4. Main driver ---
 def main():
-    create_airquality_table()
+    # Run this ONCE to start fresh, then comment it out:
+    # reset_airquality_table()
+
+    create_tables()
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
-
     cur.execute("SELECT DISTINCT zip FROM AirQualityData")
     stored_zips = set(row[0] for row in cur.fetchall())
+    conn.close()
+
     remaining_zips = [z for z in ZIP_CODES if z not in stored_zips]
     random.shuffle(remaining_zips)
     chunk = remaining_zips[:25]
 
     if not chunk:
         print("All zip codes have already been fetched.")
-        conn.close()
         return
 
     print(f"\nFetching AQI data for {len(chunk)} new zip codes...\n")
@@ -114,9 +129,13 @@ def main():
         if records:
             insert_air_quality(records)
 
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM AirQualityData")
     total_rows = cur.fetchone()[0]
     print(f"\nTotal rows in AQI: {total_rows}")
     conn.close()
+
+# --- Run ---
 if __name__ == "__main__":
     main()
