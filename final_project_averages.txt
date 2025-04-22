@@ -1,0 +1,3 @@
+Average Temperature: 62.90 °F
+Average Pressure: 1016.68 inHg
+Average Humidity: 64.94 %
