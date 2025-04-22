@@ -3,7 +3,7 @@ import sqlite3
 import random
 
 # --- CONFIGURATION ---
-API_KEY = "BF559927-DC09-44A6-B56C-2D51E5751C9D"
+API_KEY = "B7D7AAE3-FBF1-4349-990F-9302D082B292"
 BASE_URL = "https://www.airnowapi.org/aq/forecast/zipCode/"
 DB_NAME = "final_project.db"
 
@@ -86,17 +86,28 @@ def insert_air_quality(records):
         if aqi == -1:
             continue  # Skip invalid AQI
 
-        # Check if ZIP already exists in the database
+        # Skip inserting ZIP if it's already in the database
         cur.execute("SELECT 1 FROM AirQualityData WHERE zip = ?", (zip_code,))
         if cur.fetchone():
-            continue  # Skip if ZIP already exists
+            continue
 
-        # Insert pollutant if it doesn't exist
-        cur.execute("INSERT OR IGNORE INTO Pollutants (name) VALUES (?)", (pollutant,))
+        # Check if pollutant already exists
         cur.execute("SELECT id FROM Pollutants WHERE name = ?", (pollutant,))
-        pollutant_id = cur.fetchone()[0]
+        result = cur.fetchone()
 
-        # Insert AQI row
+        if result:
+            pollutant_id = result[0]
+        else:
+            # Find the next ID manually
+            cur.execute("SELECT MAX(id) FROM Pollutants")
+            max_id = cur.fetchone()[0] or 0
+            new_id = max_id + 1
+
+            # Insert with manual ID
+            cur.execute("INSERT INTO Pollutants (id, name) VALUES (?, ?)", (new_id, pollutant))
+            pollutant_id = new_id
+
+        # Insert into AirQualityData
         cur.execute('''
             INSERT INTO AirQualityData (zip, aqi, pollutant_id)
             VALUES (?, ?, ?)
