@@ -1,24 +1,48 @@
 import sqlite3
+import pandas as pd
 import matplotlib.pyplot as plt
 
+# Connect to DB
 conn = sqlite3.connect('final_project.db')
-cursor = conn.cursor()
-
-cursor.execute("SELECT AVG(aqi) FROM AirQualityData")
-average_aqi = cursor.fetchone()[0]
-
-print("Average Temp:", average_aqi)
-
-
+query = '''
+    SELECT zip, AVG(aqi) AS avg_aqi
+    FROM AirQualityData
+    GROUP BY zip
+    ORDER BY zip
+'''
+df = pd.read_sql_query(query, conn)
 conn.close()
 
-fig = plt.figure(figsize=(10,5))
-ax1 = fig.add_subplot(221)
-ax1.set_xlabel("AQI")
-ax1.set_ylabel("Average")
+# Treat ZIP codes as strings for display
+df['zip'] = df['zip'].astype(str)
 
-# Plot the data
-ax1.bar(["AQI"],[average_aqi])
+# Generate even spacing for x-axis
+x_positions = range(len(df))
 
-# Show the plot
+# --- PLOT SETUP ---
+plt.figure(figsize=(20, 6))  # Wider figure
+
+# Line plot
+plt.plot(x_positions, df['avg_aqi'], marker='o', linestyle='-', color='teal')
+
+# Limit how many ZIP labels are shown on x-axis
+# Show every Nth ZIP code label
+step = max(1, len(df) // 25)  # Show ~25 labels max
+plt.xticks(
+    ticks=[i for i in x_positions if i % step == 0],
+    labels=[df['zip'][i] for i in range(len(df)) if i % step == 0],
+    rotation=45,
+    ha='right'
+)
+
+# Labels & Title
+plt.xlabel('Zip Code')
+plt.ylabel('Average AQI')
+plt.title('Average AQI by Zip Code')
+plt.grid(True)
+
+# Adjust spacing so labels don't get cut off
+plt.tight_layout()
+
+# Show plot
 plt.show()
