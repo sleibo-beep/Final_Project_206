@@ -29,7 +29,7 @@ ax1.set_ylabel("Average Per Zipcode")
 ax1.set_title("Average Weather Statistics Per Zipcode")
 
 # Plot the data
-ax1.bar(["Temp","Pressure","Humidity"],[average_temp,average_pressure,average_humidity])
+ax1.bar(["Temp (°F)","Pressure (inHg)","Humidity (%)"],[average_temp,average_pressure,average_humidity])
 
 # Show the plot
 plt.show()

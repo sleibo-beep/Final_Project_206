@@ -27,22 +27,20 @@ def create_tables():
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    # Create Pollutants table
+    # DO NOT DROP the table unless you really want to reset all data!
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS AirQualityData (
+            zip INTEGER PRIMARY KEY,
+            aqi INTEGER,
+            pollutant_id INTEGER,
+            FOREIGN KEY (pollutant_id) REFERENCES Pollutants(id)
+        )
+    ''')
+
     cur.execute('''
         CREATE TABLE IF NOT EXISTS Pollutants (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE
-        )
-    ''')
-
-    # Create AirQualityData table
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS AirQualityData (
-            zip INTEGER,
-            aqi INTEGER,
-            pollutant_id INTEGER,
-            PRIMARY KEY (zip, pollutant_id),
-            FOREIGN KEY (pollutant_id) REFERENCES Pollutants(id)
         )
     ''')
 
@@ -85,17 +83,22 @@ def insert_air_quality(records):
     cur = conn.cursor()
 
     for zip_code, aqi, pollutant in records:
-        # Insert pollutant into Pollutants table and get ID
-        cur.execute('''
-            INSERT OR IGNORE INTO Pollutants (name)
-            VALUES (?)
-        ''', (pollutant,))
-        cur.execute('SELECT id FROM Pollutants WHERE name = ?', (pollutant,))
+        if aqi == -1:
+            continue  # Skip invalid AQI
+
+        # Check if ZIP already exists in the database
+        cur.execute("SELECT 1 FROM AirQualityData WHERE zip = ?", (zip_code,))
+        if cur.fetchone():
+            continue  # Skip if ZIP already exists
+
+        # Insert pollutant if it doesn't exist
+        cur.execute("INSERT OR IGNORE INTO Pollutants (name) VALUES (?)", (pollutant,))
+        cur.execute("SELECT id FROM Pollutants WHERE name = ?", (pollutant,))
         pollutant_id = cur.fetchone()[0]
 
-        # Insert into AirQualityData
+        # Insert AQI row
         cur.execute('''
-            INSERT OR IGNORE INTO AirQualityData (zip, aqi, pollutant_id)
+            INSERT INTO AirQualityData (zip, aqi, pollutant_id)
             VALUES (?, ?, ?)
         ''', (zip_code, aqi, pollutant_id))
 
@@ -104,9 +107,6 @@ def insert_air_quality(records):
 
 # --- 4. Main driver ---
 def main():
-    # Run this ONCE to start fresh, then comment it out:
-    # reset_airquality_table()
-
     create_tables()
 
     conn = sqlite3.connect(DB_NAME)
@@ -135,6 +135,7 @@ def main():
     total_rows = cur.fetchone()[0]
     print(f"\nTotal rows in AQI: {total_rows}")
     conn.close()
+
 
 # --- Run ---
 if __name__ == "__main__":
