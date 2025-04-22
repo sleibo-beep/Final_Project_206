@@ -29,7 +29,7 @@ def run_join_query():
                 WeatherData.temp,
                 WeatherData.pressure,
                 WeatherData.humidity,
-                AirQualityData.pollutant,
+                AirQualityData.pollutant_id,
                 AirQualityData.aqi
             FROM WeatherData
             JOIN AirQualityData
