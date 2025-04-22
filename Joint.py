@@ -43,7 +43,6 @@ def run_join_query():
             print("\nJoin result:")
             print(df)
 
-            # Save join result into a new table called 'WeatherAirQualityJoin'
             df.to_sql('WeatherAirQualityJoin', conn, if_exists='replace', index=False)
             print("\nJoin result inserted into table 'WeatherAirQualityJoin'")
     except Exception as e:

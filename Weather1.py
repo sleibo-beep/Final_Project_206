@@ -4,12 +4,10 @@ import time
 import random
 from datetime import datetime
 
-# --- CONFIGURATION ---
 DB_NAME = "final_project.db"
 API_KEY = "f86bdf89ba9b235fa5ed7e263b6808bd"
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
-# --- ZIP CODE LIST ---
 ZIP_CODES = [
     "10001", "94103", "60601", "77001", "85001", "19104", "30303", "98101", "48201", "02201",
     "33101", "80202", "55401", "64106", "46204", "73102", "96813", "20001", "37201", "21201",
@@ -24,7 +22,6 @@ ZIP_CODES = [
     "97201", "97202", "97203", "97206", "97210", "97212", "97214", "97217", "97219", "97221"
 ]
 
-# --- DATABASE SETUP ---
 def create_db():
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -41,7 +38,6 @@ def create_db():
     conn.commit()
     conn.close()
 
-# --- FETCH WEATHER FOR A SINGLE ZIP ---
 def fetch_and_clean(zip_code):
     params = {
         "appid": API_KEY,
@@ -61,7 +57,6 @@ def fetch_and_clean(zip_code):
 
     return [(zip_code, temp, pressure, humidity)]
 
-# --- INSERT WEATHER INTO DB ---
 def insert_weather_data(records):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -73,23 +68,19 @@ def insert_weather_data(records):
     conn.commit()
     conn.close()
 
-# --- MAIN DRIVER FUNCTION ---
 def main():
     create_db()
 
-    # Connect once here to reuse
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    # Get zip codes already in DB
     cur.execute("SELECT DISTINCT zip FROM WeatherData")
     stored_zips = set(row[0] for row in cur.fetchall())
 
-    # Filter out zips that are already in DB
     remaining_zips = [z for z in ZIP_CODES if z not in stored_zips]
     random.shuffle(remaining_zips)
 
-    chunk = remaining_zips[:25]  # Take the next 25 new ones
+    chunk = remaining_zips[:25]  
 
     if not chunk:
         print("All zip codes have already been fetched.")
@@ -102,7 +93,6 @@ def main():
         if records:
             insert_weather_data(records)
 
-    # Optional: Print updated total
     cur.execute("SELECT COUNT(*) FROM WeatherData")
     total_rows = cur.fetchone()[0]
     print(f"\nTotal rows in WeatherData: {total_rows}")

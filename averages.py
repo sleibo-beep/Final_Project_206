@@ -1,11 +1,9 @@
 import sqlite3
 import matplotlib as plt
 
-# Connect to the database
 conn = sqlite3.connect("final_project.db")
 cursor = conn.cursor()
 
-# SQL query: Join all 3 tables to get pollutant name, AQI, and temperature
 query = '''
     SELECT 
         Pollutants.name AS pollutant,
@@ -19,7 +17,6 @@ query = '''
 results = cursor.execute(query).fetchall()
 conn.close()
 
-# Aggregate values per pollutant
 pollutant_data = {}
 for pollutant, aqi, temp in results:
     if pollutant not in pollutant_data:
@@ -50,7 +47,6 @@ print("Average Humidity:", average_humidity)
 conn.close()
 
 
-# Write the output to a text file
 with open("final_project_averages.txt", "w") as f:
     f.write("Average AQI and Temperature by Pollutant\n")
     for pollutant, data in pollutant_data.items():

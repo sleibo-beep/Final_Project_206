@@ -2,7 +2,6 @@ import requests
 import sqlite3
 import random
 
-# --- CONFIGURATION ---
 API_KEY = "B7D7AAE3-FBF1-4349-990F-9302D082B292"
 BASE_URL = "https://www.airnowapi.org/aq/forecast/zipCode/"
 DB_NAME = "final_project.db"
@@ -22,12 +21,10 @@ ZIP_CODES = [
 ]
 
 
-# --- 1. Create tables ---
 def create_tables():
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    # DO NOT DROP the table unless you really want to reset all data!
     cur.execute('''
         CREATE TABLE IF NOT EXISTS AirQualityData (
             zip INTEGER PRIMARY KEY,
@@ -47,7 +44,6 @@ def create_tables():
     conn.commit()
     conn.close()
 
-# --- 2. Fetch from API ---
 def fetch_air_quality(zip_code):
     params = {
         "format": "application/json",
@@ -77,37 +73,31 @@ def fetch_air_quality(zip_code):
 
     return records
 
-# --- 3. Insert records with pollutant ID ---
 def insert_air_quality(records):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     for zip_code, aqi, pollutant in records:
         if aqi == -1:
-            continue  # Skip invalid AQI
+            continue  
 
-        # Skip inserting ZIP if it's already in the database
         cur.execute("SELECT 1 FROM AirQualityData WHERE zip = ?", (zip_code,))
         if cur.fetchone():
             continue
 
-        # Check if pollutant already exists
         cur.execute("SELECT id FROM Pollutants WHERE name = ?", (pollutant,))
         result = cur.fetchone()
 
         if result:
             pollutant_id = result[0]
         else:
-            # Find the next ID manually
             cur.execute("SELECT MAX(id) FROM Pollutants")
             max_id = cur.fetchone()[0] or 0
             new_id = max_id + 1
 
-            # Insert with manual ID
             cur.execute("INSERT INTO Pollutants (id, name) VALUES (?, ?)", (new_id, pollutant))
             pollutant_id = new_id
 
-        # Insert into AirQualityData
         cur.execute('''
             INSERT INTO AirQualityData (zip, aqi, pollutant_id)
             VALUES (?, ?, ?)
@@ -116,7 +106,6 @@ def insert_air_quality(records):
     conn.commit()
     conn.close()
 
-# --- 4. Main driver ---
 def main():
     create_tables()
 
@@ -148,6 +137,5 @@ def main():
     conn.close()
 
 
-# --- Run ---
 if __name__ == "__main__":
     main()
